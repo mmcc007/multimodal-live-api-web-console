@@ -2,14 +2,47 @@
 .knowledge-query-result {
   padding: 1rem;
   max-width: 800px;
+  height: 100%;
+  max-height: calc(100vh - 200px); // Leave space for controls
   margin: 0 auto;
   color: var(--Neutral-90);
   font-family: "Space Mono", monospace;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  // Styling scrollbar for webkit browsers
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--Neutral-10);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--Neutral-30);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--Neutral-50);
+    }
+  }
+
+  // Firefox scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: var(--Neutral-30) var(--Neutral-10);
 
   h3 {
     color: var(--Blue-500);
     margin-bottom: 1rem;
     font-size: 1.2rem;
+    position: sticky;
+    top: 0;
+    background: var(--Neutral-5);
+    padding: 0.5rem 0;
+    z-index: 1;
   }
 
   .response-section {
@@ -20,6 +53,7 @@
     
     p {
       line-height: 1.5;
+      margin: 0;
     }
   }
 
@@ -39,6 +73,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1;
 
       .citation-number {
         font-weight: bold;
@@ -55,6 +92,7 @@
 
       .citation-meta {
         display: flex;
+        flex-wrap: wrap;
         gap: 1rem;
         margin-bottom: 0.75rem;
         font-size: 0.9rem;
