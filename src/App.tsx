@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.scss";
-import { LiveAPIProvider } from "./contexts/LiveAPIContext";
+import { LiveAPIProvider, useLiveAPIContext } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import { Altair } from "./components/altair/Altair";
-import { KnowledgeQuery } from "./components/knowledge-query/KnowledgeQuery";
+import { KnowledgeQuery, declaration as knowledgeQueryDeclaration } from "./components/knowledge-query/KnowledgeQuery";
+import { declaration as altairDeclaration } from "./components/altair/Altair";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
 
@@ -31,42 +32,83 @@ if (typeof API_KEY !== "string") {
 const host = "generativelanguage.googleapis.com";
 const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
-function App() {
-  // this video reference is used for displaying the active stream, whether that is the webcam or screen capture
-  // feel free to style as you see fit
+// Wrapper component to handle configuration
+function AppContent() {
+  const { setConfig } = useLiveAPIContext();
   const videoRef = useRef<HTMLVideoElement>(null);
-  // either the screen capture, the video or null, if null we hide it
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
+  useEffect(() => {
+    setConfig({
+      model: "models/gemini-2.0-flash-exp",
+      systemInstruction: {
+        parts: [
+          {
+            text: `You are a helpful assistant with access to multiple tools:
+
+1. Knowledge Base Queries (query_knowledge_base function):
+   - Use for searching and retrieving information
+   - Supports text, comparative, and multimodal queries
+   - Use when the user asks for information or comparisons
+
+2. Data Visualization (render_altair function):
+   - Use for creating graphs and visual representations of data
+   - Use when the user asks for charts, graphs, or visual analysis
+   - Create visualizations based on discussed data or topics
+
+3. Google Search:
+   - Available to support both knowledge queries and visualizations
+   - Use to ground responses in current information
+   - Supplements both tools with real-world data
+
+Always choose the most appropriate tool for the user's request. You can combine tools when needed - for example, searching for data and then visualizing it. If a request is unclear, ask for clarification about what type of response would be most helpful.`
+          },
+        ],
+      },
+      tools: [
+        { googleSearch: {} },
+        { 
+          functionDeclarations: [
+            knowledgeQueryDeclaration,
+            altairDeclaration
+          ]
+        },
+      ],
+    });
+  }, [setConfig]);
+
+  return (
+    <div className="streaming-console">
+      <SidePanel />
+      <main>
+        <div className="main-app-area">
+          <Altair />
+          <KnowledgeQuery />
+          <video
+            className={cn("stream", {
+              hidden: !videoRef.current || !videoStream,
+            })}
+            ref={videoRef}
+            autoPlay
+            playsInline
+          />
+        </div>
+
+        <ControlTray
+          videoRef={videoRef}
+          supportsVideo={true}
+          onVideoStreamChange={setVideoStream}
+        />
+      </main>
+    </div>
+  );
+}
+
+function App() {
   return (
     <div className="App">
       <LiveAPIProvider url={uri} apiKey={API_KEY}>
-        <div className="streaming-console">
-          <SidePanel />
-          <main>
-            <div className="main-app-area">
-              {/* APP goes here */}
-              <Altair />
-              <KnowledgeQuery />
-              <video
-                className={cn("stream", {
-                  hidden: !videoRef.current || !videoStream,
-                })}
-                ref={videoRef}
-                autoPlay
-                playsInline
-              />
-            </div>
-
-            <ControlTray
-              videoRef={videoRef}
-              supportsVideo={true}
-              onVideoStreamChange={setVideoStream}
-            >
-              {/* put your own buttons here */}
-            </ControlTray>
-          </main>
-        </div>
+        <AppContent />
       </LiveAPIProvider>
     </div>
   );

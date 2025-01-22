@@ -69,25 +69,8 @@ function convertToFileUrl(path: string): string {
 function KnowledgeQueryComponent() {
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { client, setConfig } = useLiveAPIContext();
+  const { client } = useLiveAPIContext();
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
-
-  useEffect(() => {
-    setConfig({
-      model: "models/gemini-2.0-flash-exp",
-      systemInstruction: {
-        parts: [
-          {
-            text: 'You are a helpful assistant with access to a knowledge base. When users ask questions, use the query_knowledge_base function to search for relevant information. For text queries use "text" type, for image related queries use "multimodal" type, and for comparing things use "comparative" type.',
-          },
-        ],
-      },
-      tools: [
-        { googleSearch: {} },
-        { functionDeclarations: [declaration] },
-      ],
-    });
-  }, [setConfig]);
 
   useEffect(() => {
     const onToolCall = async (toolCall: ToolCall) => {
