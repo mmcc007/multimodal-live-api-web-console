@@ -46,6 +46,26 @@ interface QueryResponse {
   image_citations: { [key: string]: ImageCitation };
 }
 
+function convertToFileUrl(path: string): string {
+  try {
+    // Check if this is a GCS path
+    if (path.startsWith('gs://')) {
+      // Remove gs:// prefix and convert to https URL
+      const gcsPath = path.slice(5);  // Remove 'gs://'
+      // Use encodeURIComponent but replace encoded slashes back to normal slashes
+      const quotedPath = encodeURIComponent(gcsPath).replace(/%2F/g, '/');
+      return `https://storage.googleapis.com/${quotedPath}`;
+    } else {
+      // Handle local file path
+      const quotedPath = encodeURIComponent(path).replace(/%2F/g, '/');
+      return `file://${quotedPath}`;
+    }
+  } catch (e) {
+    console.error("Failed to convert path to URL:", path);
+    throw new Error(`Failed to convert path to URL: ${path}`);
+  }
+}
+
 function KnowledgeQueryComponent() {
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +163,11 @@ function KnowledgeQueryComponent() {
     return null;
   }
 
+  // Get the first text citation if it exists
+  const firstTextCitation = Object.entries(queryResult.text_citations)[0];
+  // Get the first image citation if it exists
+  const firstImageCitation = Object.entries(queryResult.image_citations)[0];
+
   return (
     <div className="knowledge-query-result">
       <div className="response-section">
@@ -150,55 +175,54 @@ function KnowledgeQueryComponent() {
         <p>{queryResult.response}</p>
       </div>
 
-      {Object.keys(queryResult.text_citations).length > 0 && (
+      {firstTextCitation && (
         <div className="citations-section">
-          <h3>Text Citations</h3>
-          {Object.entries(queryResult.text_citations).map(([key, citation]) => (
-            <div key={`text-${key}`} className="citation-card">
-              <div className="citation-header">
-                <span className="citation-number">Citation {parseInt(key) + 1}</span>
-                <span className="citation-score">Score: {citation.cosine_score.toFixed(3)}</span>
+          <h3>Text Citation</h3>
+          <div className="citation-card">
+            <div className="citation-header">
+              <span className="citation-number">Top Match</span>
+              <span className="citation-score">Score: {firstTextCitation[1].cosine_score.toFixed(3)}</span>
+            </div>
+            <div className="citation-body">
+              <div className="citation-meta">
+                <span>File: {firstTextCitation[1].file_name}</span>
+                <span>Page: {firstTextCitation[1].page_num}</span>
+                {firstTextCitation[1].chunk_number !== undefined && (
+                  <span>Chunk: {firstTextCitation[1].chunk_number}</span>
+                )}
               </div>
-              <div className="citation-body">
-                <div className="citation-meta">
-                  <span>File: {citation.file_name}</span>
-                  <span>Page: {citation.page_num}</span>
-                  {citation.chunk_number !== undefined && (
-                    <span>Chunk: {citation.chunk_number}</span>
-                  )}
-                </div>
-                <div className="citation-text">
-                  {citation.chunk_text || citation.text}
-                </div>
+              <div className="citation-text">
+                {firstTextCitation[1].chunk_text || firstTextCitation[1].text}
               </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      {Object.keys(queryResult.image_citations).length > 0 && (
+      {firstImageCitation && (
         <div className="citations-section">
-          <h3>Image Citations</h3>
-          {Object.entries(queryResult.image_citations).map(([key, citation]) => (
-            <div key={`image-${key}`} className="citation-card">
-              <div className="citation-header">
-                <span className="citation-number">Citation {parseInt(key) + 1}</span>
-                <span className="citation-score">Score: {citation.cosine_score.toFixed(3)}</span>
+          <h3>Image Citation</h3>
+          <div className="citation-card">
+            <div className="citation-header">
+              <span className="citation-number">Top Match</span>
+              <span className="citation-score">Score: {firstImageCitation[1].cosine_score.toFixed(3)}</span>
+            </div>
+            <div className="citation-body">
+              <div className="citation-meta">
+                <span>File: {firstImageCitation[1].file_name}</span>
+                <span>Page: {firstImageCitation[1].page_num}</span>
               </div>
-              <div className="citation-body">
-                <div className="citation-meta">
-                  <span>File: {citation.file_name}</span>
-                  <span>Page: {citation.page_num}</span>
-                </div>
-                <div className="citation-image">
-                  <img src={citation.img_path} alt={citation.image_description || 'Citation image'} />
-                  {citation.image_description && (
-                    <div className="image-description">{citation.image_description}</div>
-                  )}
-                </div>
+              <div className="citation-image">
+                <img 
+                  src={convertToFileUrl(firstImageCitation[1].img_path)} 
+                  alt={firstImageCitation[1].image_description || 'Citation image'} 
+                />
+                {firstImageCitation[1].image_description && (
+                  <div className="image-description">{firstImageCitation[1].image_description}</div>
+                )}
               </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
