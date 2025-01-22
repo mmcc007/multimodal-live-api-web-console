@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// src/components/altair/Altair.tsx
 import { type FunctionDeclaration, SchemaType } from "@google/generative-ai";
 import { useEffect, useRef, useState, memo } from "react";
 import vegaEmbed from "vega-embed";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { ToolCall } from "../../multimodal-live-types";
 
-const declaration: FunctionDeclaration = {
+export const declaration: FunctionDeclaration = {
   name: "render_altair",
   description: "Displays an altair graph in json format.",
   parameters: {
@@ -37,31 +38,7 @@ const declaration: FunctionDeclaration = {
 
 function AltairComponent() {
   const [jsonString, setJSONString] = useState<string>("");
-  const { client, setConfig } = useLiveAPIContext();
-
-  useEffect(() => {
-    setConfig({
-      model: "models/gemini-2.0-flash-exp",
-      generationConfig: {
-        responseModalities: "audio",
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
-        },
-      },
-      systemInstruction: {
-        parts: [
-          {
-            text: 'You are my helpful assistant. Any time I ask you for a graph call the "render_altair" function I have provided you. Dont ask for additional information just make your best judgement.',
-          },
-        ],
-      },
-      tools: [
-        // there is a free-tier quota for search
-        { googleSearch: {} },
-        { functionDeclarations: [declaration] },
-      ],
-    });
-  }, [setConfig]);
+  const { client } = useLiveAPIContext();
 
   useEffect(() => {
     const onToolCall = (toolCall: ToolCall) => {
@@ -73,8 +50,6 @@ function AltairComponent() {
         const str = (fc.args as any).json_graph;
         setJSONString(str);
       }
-      // send data for the response of your tool call
-      // in this case Im just saying it was successful
       if (toolCall.functionCalls.length) {
         setTimeout(
           () =>
@@ -101,6 +76,7 @@ function AltairComponent() {
       vegaEmbed(embedRef.current, JSON.parse(jsonString));
     }
   }, [embedRef, jsonString]);
+  
   return <div className="vega-embed" ref={embedRef} />;
 }
 
