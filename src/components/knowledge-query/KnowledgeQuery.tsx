@@ -74,6 +74,7 @@ function KnowledgeQueryComponent() {
 
   useEffect(() => {
     const onToolCall = async (toolCall: ToolCall) => {
+      console.log(`got toolcall`, toolCall);
       const fc = toolCall.functionCalls.find(
         (fc) => fc.name === declaration.name
       );
@@ -101,7 +102,8 @@ function KnowledgeQueryComponent() {
           }
 
           const data = await response.json();
-          
+          console.log('query_knowledge_base', data);
+
           if (data.status === 'success') {
             setQueryResult(data.data);
             setError(null);
