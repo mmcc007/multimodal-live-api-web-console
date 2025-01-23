@@ -49,18 +49,19 @@ function AltairComponent() {
       if (fc) {
         const str = (fc.args as any).json_graph;
         setJSONString(str);
-      }
-      if (toolCall.functionCalls.length) {
-        setTimeout(
-          () =>
-            client.sendToolResponse({
-              functionResponses: toolCall.functionCalls.map((fc) => ({
-                response: { output: { success: true } },
-                id: fc.id,
-              })),
-            }),
-          200,
-        );
+
+        if (toolCall.functionCalls.length) {
+          setTimeout(
+            () =>
+              client.sendToolResponse({
+                functionResponses: toolCall.functionCalls.map((fc) => ({
+                  response: { output: { success: true } },
+                  id: fc.id,
+                })),
+              }),
+            200,
+          );
+        }
       }
     };
     client.on("toolcall", onToolCall);
@@ -76,7 +77,7 @@ function AltairComponent() {
       vegaEmbed(embedRef.current, JSON.parse(jsonString));
     }
   }, [embedRef, jsonString]);
-  
+
   return <div className="vega-embed" ref={embedRef} />;
 }
 
